@@ -2,6 +2,7 @@
 
 const fetch = require('node-fetch')
 const qs = require('qs')
+const HttpsProxyAgent = require('https-proxy-agent');
 
 const BASE_URL = 'https://pro-api.coinmarketcap.com'
 
@@ -15,7 +16,7 @@ class CoinMarketCap {
    * @param {Object=} options.config = Configuration for fetch request
    *
    */
-  constructor (apiKey, { version = 'v1', fetcher = fetch, config = {} } = {}) {
+  constructor (apiKey, { proxy,  fetcher = fetch, config = {} } = {}) {
     this.apiKey = apiKey
     this.config = Object.assign({}, {
       method: 'GET',
@@ -26,9 +27,15 @@ class CoinMarketCap {
         'Accept-Encoding': 'deflate, gzip'
       }
     }, config)
+    if (proxy) {
+      const proxyAgent = new HttpsProxyAgent(proxy);
+      this.config = Object.assign(this.config, {
+        agent: proxyAgent
+      })
+    }
 
     this.fetcher = fetcher
-    this.url = `${BASE_URL}/${version}`
+    this.url = `${BASE_URL}`
   }
 
   /**
@@ -58,7 +65,7 @@ class CoinMarketCap {
 
     return createRequest({
       fetcher: this.fetcher,
-      url: `${this.url}/cryptocurrency/map`,
+      url: `${this.url}/v1/cryptocurrency/map`,
       config: this.config,
       query: { listing_status: listingStatus, start, limit, symbol, sort }
     })
@@ -82,9 +89,65 @@ class CoinMarketCap {
   getMetadata (args = {}) {
     return createRequest({
       fetcher: this.fetcher,
-      url: `${this.url}/cryptocurrency/info`,
+      url: `${this.url}/v2/cryptocurrency/info`,
       config: this.config,
-      query: sanitizeIdAndSymbol(args.id, args.symbol)
+      query: sanitizeParams(args.id, args.symbol, args.slug)
+    })
+  }
+
+  /**
+   * Get information about all coin categories available on CoinMarketCap. Includes a paginated list of cryptocurrency quotes and metadata from each category.
+   * Either id or symbol or slug is required, but passing in both is not allowed.
+   *
+   * @param {Object=} options Options for the request:
+   * @param {Array|String|Number=} options.id One or more comma separated cryptocurrency IDs
+   * @param {String[]|String} options.symbol One or more comma separated cryptocurrency symbols
+   * @param {String[]|String} options.slug One or more comma separated cryptocurrency slug
+   *
+   * @example
+   * const client = new CoinMarketCap('api key')
+   * client.getCategories({id: '6051a82166fc1b42617d6dc1'}).then(console.log).catch(console.error)
+   * client.getCategories({id: ['6051a82166fc1b42617d6dc1', '6051a82266fc1b42617d6dc2']}).then(console.log).catch(console.error)
+   * client.getCategories({symbol: 'BTC,ETH'}).then(console.log).catch(console.error)
+   * client.getCategories({symbol: ['BTC', 'ETH']}).then(console.log).catch(console.error)
+   * client.getCategories({slug: 'Gaming,Spartan Group'}).then(console.log).catch(console.error)
+   * client.getCategories({slug: ['Gaming','Spartan Group']}).then(console.log).catch(console.error)
+   */
+  getCategories (args = {}) {
+    return createRequest({
+      fetcher: this.fetcher,
+      url: `${this.url}/v1/cryptocurrency/categories`,
+      config: this.config,
+      query: sanitizeParams(args.id, args.symbol, args.slug)
+    })
+  }
+
+  /**
+   * Get information about a single coin category available on CoinMarketCap. Includes a paginated list of the cryptocurrency quotes and metadata for the category
+   * id is required.
+   *
+   * @param {Object=} options Options for the request:
+   * @param {Array|String|Number=} options.id One or more comma separated cryptocurrency IDs
+   * @param {String[]|String} options.convert Return info in terms of another currency
+   *
+   * @example
+   * const client = new CoinMarketCap('api key')
+   * client.getCategory({id: '6051a82166fc1b42617d6dc1'}).then(console.log).catch(console.error)
+   * client.getCategory({id: '6051a82166fc1b42617d6dc1', convert: ['USD','ETH']}).then(console.log).catch(console.error)
+   */
+  getCategory (args = {}) {
+    let { id, convert } = args
+    if (!id) {
+      throw new Error('Params id must be passed.')
+    }
+    if (convert && convert instanceof Array) {
+      convert = convert.join(',')
+    }
+    return createRequest({
+      fetcher: this.fetcher,
+      url: `${this.url}/v1/cryptocurrency/category`,
+      config: this.config,
+      query: { id, convert }
     })
   }
 
@@ -127,7 +190,7 @@ class CoinMarketCap {
 
     return createRequest({
       fetcher: this.fetcher,
-      url: `${this.url}/cryptocurrency/listings/latest`,
+      url: `${this.url}/v1/cryptocurrency/listings/latest`,
       config: this.config,
       query: { start, limit, convert, sort, sort_dir: sortDir, cryptocurrency_type: cryptocurrencyType }
     })
@@ -150,7 +213,7 @@ class CoinMarketCap {
    */
   getQuotes (args = {}) {
     let convert = args.convert
-    const { id, symbol } = sanitizeIdAndSymbol(args.id, args.symbol)
+    const { id, symbol, slug } = sanitizeParams(args.id, args.symbol, args.slug)
 
     if (convert instanceof Array) {
       convert = convert.join(',')
@@ -158,9 +221,9 @@ class CoinMarketCap {
 
     return createRequest({
       fetcher: this.fetcher,
-      url: `${this.url}/cryptocurrency/quotes/latest`,
+      url: `${this.url}/v2/cryptocurrency/quotes/latest`,
       config: this.config,
-      query: { id, symbol, convert }
+      query: { id, symbol, slug, convert }
     })
   }
 
@@ -190,20 +253,20 @@ class CoinMarketCap {
 
     return createRequest({
       fetcher: this.fetcher,
-      url: `${this.url}/global-metrics/quotes/latest`,
+      url: `${this.url}/v1/global-metrics/quotes/latest`,
       config: this.config,
       query: convert
     })
   }
 }
 
-const sanitizeIdAndSymbol = (id, symbol) => {
-  if (id && symbol) {
-    throw new Error('ID and symbol cannot be passed in at the same time.')
+const sanitizeParams = (id, symbol, slug) => {
+  if ((id && symbol) || (id && slug) || (symbol && slug)) {
+    throw new Error('ID, symbol and slug cannot be passed in at the same time.')
   }
 
-  if (!id && !symbol) {
-    throw new Error('Either ID or symbol is required to be passed in.')
+  if (!id && !symbol && !slug) {
+    throw new Error('Either ID or symbol or slug is required to be passed in.')
   }
 
   if (id instanceof Array) {
@@ -214,7 +277,11 @@ const sanitizeIdAndSymbol = (id, symbol) => {
     symbol = symbol.join(',')
   }
 
-  return { id, symbol }
+  if (slug instanceof Array) {
+    slug = slug.join(',')
+  }
+
+  return { id, symbol, slug }
 }
 
 const createRequest = (args = {}) => {

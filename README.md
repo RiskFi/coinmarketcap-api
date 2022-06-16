@@ -30,7 +30,8 @@ $ yarn add coinmarketcap-api
 const CoinMarketCap = require('coinmarketcap-api')
 
 const apiKey = 'api key'
-const client = new CoinMarketCap(apiKey)
+const proxy = 'http://127.0.0.1:1087' // 代理配置
+const client = new CoinMarketCap(apiKey, { proxy: proxy })
 
 client.getTickers().then(console.log).catch(console.error)
 client.getGlobal().then(console.log).catch(console.error)
@@ -52,15 +53,21 @@ Check out the [CoinMarketCap Pro API documentation](https://pro.coinmarketcap.co
 -   [getMetadata](#getmetadata)
     -   [Parameters](#parameters-2)
     -   [Examples](#examples-1)
--   [getTickers](#gettickers)
+-   [getCategories](#getcategories)
     -   [Parameters](#parameters-3)
     -   [Examples](#examples-2)
--   [getQuotes](#getquotes)
+-   [getCategory](#getcategory)
     -   [Parameters](#parameters-4)
     -   [Examples](#examples-3)
--   [getGlobal](#getglobal)
+-   [getTickers](#gettickers)
     -   [Parameters](#parameters-5)
     -   [Examples](#examples-4)
+-   [getQuotes](#getquotes)
+    -   [Parameters](#parameters-6)
+    -   [Examples](#examples-5)
+-   [getGlobal](#getglobal)
+    -   [Parameters](#parameters-7)
+    -   [Examples](#examples-6)
 
 ### constructor
 
@@ -68,7 +75,7 @@ Check out the [CoinMarketCap Pro API documentation](https://pro.coinmarketcap.co
 
 -   `apiKey` **[String](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** API key for accessing the CoinMarketCap API
 -   `Options` **[Object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)?** Options for the CoinMarketCap instance (optional, default `{}`)
-    -   `Options.version`   (optional, default `'v1'`)
+    -   `Options.proxy`  
     -   `Options.fetcher`   (optional, default `fetch`)
     -   `Options.config`   (optional, default `{}`)
 
@@ -117,6 +124,51 @@ client.getMetadata({id: '1'}).then(console.log).catch(console.error)
 client.getMetadata({id: [1, 2]}).then(console.log).catch(console.error)
 client.getMetadata({symbol: 'BTC,ETH'}).then(console.log).catch(console.error)
 client.getMetadata({symbol: ['BTC', 'ETH']}).then(console.log).catch(console.error)
+```
+
+### getCategories
+
+Get information about all coin categories available on CoinMarketCap. Includes a paginated list of cryptocurrency quotes and metadata from each category.
+Either id or symbol or slug is required, but passing in both is not allowed.
+
+#### Parameters
+
+-   `args`   (optional, default `{}`)
+-   `options` **[Object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)?** Options for the request:
+    -   `options.id` **([Array](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array) \| [String](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String) \| [Number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number))?** One or more comma separated cryptocurrency IDs
+    -   `options.symbol` **([Array](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array)&lt;[String](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)> | [String](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String))** One or more comma separated cryptocurrency symbols
+    -   `options.slug` **([Array](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array)&lt;[String](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)> | [String](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String))** One or more comma separated cryptocurrency slug
+
+#### Examples
+
+```javascript
+const client = new CoinMarketCap('api key')
+client.getCategories({id: '6051a82166fc1b42617d6dc1'}).then(console.log).catch(console.error)
+client.getCategories({id: ['6051a82166fc1b42617d6dc1', '6051a82266fc1b42617d6dc2']}).then(console.log).catch(console.error)
+client.getCategories({symbol: 'BTC,ETH'}).then(console.log).catch(console.error)
+client.getCategories({symbol: ['BTC', 'ETH']}).then(console.log).catch(console.error)
+client.getCategories({slug: 'Gaming,Spartan Group'}).then(console.log).catch(console.error)
+client.getCategories({slug: ['Gaming','Spartan Group']}).then(console.log).catch(console.error)
+```
+
+### getCategory
+
+Get information about a single coin category available on CoinMarketCap. Includes a paginated list of the cryptocurrency quotes and metadata for the category
+id is required.
+
+#### Parameters
+
+-   `args`   (optional, default `{}`)
+-   `options` **[Object](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object)?** Options for the request:
+    -   `options.id` **([Array](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array) \| [String](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String) \| [Number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number))?** One or more comma separated cryptocurrency IDs
+    -   `options.convert` **([Array](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array)&lt;[String](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)> | [String](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String))** Return info in terms of another currency
+
+#### Examples
+
+```javascript
+const client = new CoinMarketCap('api key')
+client.getCategory({id: '6051a82166fc1b42617d6dc1'}).then(console.log).catch(console.error)
+client.getCategory({id: '6051a82166fc1b42617d6dc1', convert: ['USD','ETH']}).then(console.log).catch(console.error)
 ```
 
 ### getTickers
@@ -196,7 +248,7 @@ Contributions are welcome!
 4.  Push to the branch: `git push origin my-new-feature`
 5.  Submit a pull request :D
 
-Or open up [a issue](https://github.com/tiaanduplessis/coinmarketcap-api/issues).
+Or open up [a issue](https://github.com/dugusanfeng/coinmarketcap-api/issues).
 
 ## License
 
