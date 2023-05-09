@@ -2,7 +2,7 @@
 
 const fetch = require('node-fetch')
 const qs = require('qs')
-const HttpsProxyAgent = require('https-proxy-agent');
+const HttpsProxyAgent = require('https-proxy-agent')
 
 const BASE_URL = 'https://pro-api.coinmarketcap.com'
 
@@ -16,7 +16,7 @@ class CoinMarketCap {
    * @param {Object=} options.config = Configuration for fetch request
    *
    */
-  constructor (apiKey, { proxy,  fetcher = fetch, config = {} } = {}) {
+  constructor (apiKey, { proxy, fetcher = fetch, config = {} } = {}) {
     this.apiKey = apiKey
     this.config = Object.assign({}, {
       method: 'GET',
@@ -28,7 +28,7 @@ class CoinMarketCap {
       }
     }, config)
     if (proxy) {
-      const proxyAgent = new HttpsProxyAgent(proxy);
+      const proxyAgent = new HttpsProxyAgent(proxy)
       this.config = Object.assign(this.config, {
         agent: proxyAgent
       })

@@ -112,7 +112,11 @@ test('should get quotes', async () => {
   expect(quotes).toHaveProperty('status.error_code')
   expect(typeof quotes.data).toBe('object')
   for (const key of Object.keys(quotes.data)) {
-    const info = quotes.data[key]
+    let info = quotes.data[key]
+
+    // Api now returns multiple obj
+    info = Array.isArray(info) ? info[0] : info
+
     expect(typeof info).toBe('object')
     expect(info).toHaveProperty('id')
     expect(info).toHaveProperty('name')
@@ -168,7 +172,11 @@ test('should get metadata', async () => {
   expect(metadata).toHaveProperty('status.error_code')
   expect(typeof metadata.data).toBe('object')
   for (const key of Object.keys(metadata.data)) {
-    const info = metadata.data[key]
+    let info = metadata.data[key]
+
+    // Api now returns multiple obj
+    info = Array.isArray(info) ? info[0] : info
+
     expect(typeof info).toBe('object')
     expect(info).toHaveProperty('id')
     expect(info).toHaveProperty('name')
@@ -186,7 +194,8 @@ test('should get metadata', async () => {
       'announcement',
       'chat',
       'explorer',
-      'source_code'
+      'source_code',
+      'facebook'
     ])
   }
 })
